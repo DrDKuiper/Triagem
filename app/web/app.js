@@ -1,4 +1,4 @@
-// Versão web do app UPA Triagem: as mesmas 4 telas do app Android (Triagem, Unidades,
+// Versão web do app HealthFlow: as mesmas 4 telas do app Android (Triagem, Unidades,
 // Previsões, Info), consumindo o backend FastAPI que serve esta página ou, na versão
 // estática, o mesmo backend rodando no navegador (offline.js).
 "use strict";

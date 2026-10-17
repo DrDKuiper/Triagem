@@ -96,17 +96,17 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :web:assembleRelease --no-daemon
-          cp web/build/outputs/apk/release/web-release.apk "$GITHUB_WORKSPACE/UPA-Triagem.apk"
+          cp web/build/outputs/apk/release/web-release.apk "$GITHUB_WORKSPACE/HealthFlow.apk"
       - uses: actions/upload-artifact@v4
         with:
-          name: UPA-Triagem-apk
-          path: UPA-Triagem.apk
+          name: HealthFlow-apk
+          path: HealthFlow.apk
       - name: Publicar na release "app-android"
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete app-android --cleanup-tag --yes || true
-          gh release create app-android UPA-Triagem.apk --target "$GITHUB_SHA" --latest \
-            --title "UPA Triagem — app Android 1.0.${{ github.run_number }}" \
+          gh release create app-android HealthFlow.apk --target "$GITHUB_SHA" --latest \
+            --title "HealthFlow — app Android 1.0.${{ github.run_number }}" \
             --notes "APK gerado automaticamente a partir de $GITHUB_SHA. Instale no celular Android (permita instalar de fontes desconhecidas). Na primeira abertura, o app baixa o Python e as bibliotecas (~40 MB) e precisa de internet."

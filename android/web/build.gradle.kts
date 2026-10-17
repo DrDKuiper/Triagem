@@ -8,11 +8,11 @@ plugins {
 // App Android da versão web: empacota o site estático (scripts/construir_site.py) e o abre
 // num WebView. O backend Python roda no próprio celular (Pyodide), sem servidor.
 android {
-    namespace = "com.upatriagem.web"
+    namespace = "com.healthflow.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.upatriagem.web"
+        applicationId = "com.healthflow.app"
         minSdk = 26
         targetSdk = 35
         versionCode = (System.getenv("VERSAO_CODIGO") ?: "1").toInt()
@@ -26,7 +26,7 @@ android {
             create("release") {
                 storeFile = file(keystore)
                 storePassword = System.getenv("ANDROID_KEYSTORE_SENHA")
-                keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: "upatriagem"
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: "healthflow"
                 keyPassword = System.getenv("ANDROID_KEYSTORE_SENHA")
             }
         }
@@ -47,7 +47,7 @@ android {
     }
 }
 
-/** Gera o site estático (index.html, JS, CSS e backend.zip) dentro dos assets do APK. */
+/** Gera o site estático (index.html, JS, CSS e backend.zip) dentro dos assets do APK, em tela cheia. */
 abstract class ConstruirSite @Inject constructor(private val exec: ExecOperations) : DefaultTask() {
     @get:InputDirectory @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val codigo: DirectoryProperty
@@ -61,7 +61,7 @@ abstract class ConstruirSite @Inject constructor(private val exec: ExecOperation
     @TaskAction
     fun construir() {
         val python = if (System.getProperty("os.name").lowercase().contains("windows")) "python" else "python3"
-        exec.exec { commandLine(python, script.get().asFile.path, saida.get().dir("site").asFile.path) }
+        exec.exec { commandLine(python, script.get().asFile.path, saida.get().dir("site").asFile.path, "--app") }
     }
 }
 

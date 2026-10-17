@@ -115,6 +115,14 @@ button, input, textarea { font: inherit; color: inherit; }
   .celular { width: 100%; height: 100dvh; border-radius: 0; padding: 0; background: none; box-shadow: none; }
   .tela { border-radius: 0; padding-top: env(safe-area-inset-top); }
 }
+/* No APK (classe "modo-app" no <html>): sempre tela cheia, com toque de app nativo */
+.modo-app .palco { padding: 0; display: block; height: 100dvh; }
+.modo-app .lateral, .modo-app .entalhe, .modo-app .barra-status, .modo-app .indicador-home { display: none; }
+.modo-app .celular { width: 100%; height: 100dvh; border-radius: 0; padding: 0; background: none; box-shadow: none; }
+.modo-app .tela { border-radius: 0; }
+.modo-app body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+.modo-app .navegacao, .modo-app .chip, .modo-app .botao, .modo-app h2, .modo-app h3 { user-select: none; -webkit-user-select: none; }
+.modo-app .navegacao { padding-bottom: 8px; }
 
 /* ---------- Estrutura do app ---------- */
 .conteudo { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
