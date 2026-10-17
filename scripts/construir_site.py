@@ -62,11 +62,13 @@ def wheel(nome: str, versao: str) -> Path:
 
 def pacotes_pyodide(lock: dict) -> list[str]:
     """Arquivos dos pacotes pedidos e de todas as suas dependências."""
-    pacotes = lock["packages"]
+    # Os nomes nas dependências nem sempre batem com as chaves (pydantic_core x pydantic-core).
+    normalizar = lambda nome: nome.lower().replace("_", "-")  # noqa: E731
+    pacotes = {normalizar(n): p for n, p in lock["packages"].items()}
     vistos: set[str] = set()
     pendentes = list(PYODIDE_PACOTES)
     while pendentes:
-        nome = pendentes.pop()
+        nome = normalizar(pendentes.pop())
         if nome in vistos:
             continue
         vistos.add(nome)
