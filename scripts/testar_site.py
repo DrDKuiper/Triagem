@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import time
 
 from playwright.sync_api import expect, sync_playwright
 
@@ -44,8 +45,10 @@ def main() -> None:
                     rota.abort()
 
             contexto.route("**/*", so_local)  # no contexto: vale também para o Web Worker
+        inicio = time.monotonic()
         pagina.goto(args.url)
         pagina.locator(".cartao.exemplo").first.wait_for(timeout=TEMPO_MS)
+        print(f"Tela inicial com os cartões em {time.monotonic() - inicio:.1f} s")
         expect(pagina.locator("#aviso-conexao")).to_be_hidden()
 
         pagina.locator(".cartao.exemplo").first.click()
@@ -53,7 +56,8 @@ def main() -> None:
         pagina.fill("#f-relato", "febre alta desde ontem, dor no corpo e atrás dos olhos")
         pagina.click("#f-avaliar")
         faixa = pagina.locator(".faixa-prioridade")
-        faixa.wait_for(timeout=60_000)
+        faixa.wait_for(timeout=TEMPO_MS)  # espera o Python terminar de carregar
+        print(f"Triagem calculada em {time.monotonic() - inicio:.1f} s")
         print("Triagem:", faixa.inner_text().replace("\n", " | "))
 
         pagina.click('.navegacao button[data-aba="previsoes"]')

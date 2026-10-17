@@ -767,3 +767,14 @@ carregarTudo();
 obterLocalizacao();
 // Atualiza a ocupação das unidades a cada 30 segundos.
 setInterval(() => atualizarUnidades(true), 30_000);
+// Versão estática: quando o Python termina de carregar, troca as respostas pré-calculadas
+// pelas calculadas agora (ocupação e status das unidades dependem da hora).
+window.addEventListener("healthflow:backend-pronto", async () => {
+  atualizarUnidades(true);
+  try {
+    estado.previsoes = await api("/api/previsoes?semanas=8");
+    renderPrevisoes();
+  } catch {
+    // mantém as previsões pré-calculadas
+  }
+});
