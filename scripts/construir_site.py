@@ -30,7 +30,7 @@ PYODIDE_VERSAO = "0.27.7"  # igual ao de app/web/offline.js
 PYODIDE_CDN = f"https://cdn.jsdelivr.net/pyodide/v{PYODIDE_VERSAO}/full/"
 PYODIDE_NUCLEO = ["pyodide.js", "pyodide.asm.js", "pyodide.asm.wasm", "python_stdlib.zip", "pyodide-lock.json"]
 # Pacotes do Pyodide carregados pelo worker (as dependências entram automaticamente).
-PYODIDE_PACOTES = ["numpy", "pandas", "scikit-learn", "pydantic"]
+PYODIDE_PACOTES = ["numpy", "pandas", "scikit-learn", "pydantic", "ssl"]  # ssl: exigido pelo anyio (FastAPI)
 # Wheels Python puro que não vêm no Pyodide; vão dentro do backend.zip.
 WHEELS = {"fastapi": "0.115.12", "starlette": "0.46.2", "anyio": "4.9.0", "sniffio": "1.3.1", "idna": "3.10"}
 LEAFLET = "https://registry.npmjs.org/leaflet/-/leaflet-1.9.4.tgz"

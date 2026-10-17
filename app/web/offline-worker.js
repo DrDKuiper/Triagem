@@ -14,7 +14,7 @@ const pronto = (async () => {
   importScripts(pyodide + "pyodide.js");
   const py = await loadPyodide({ indexURL: pyodide });
   progresso("Carregando numpy, pandas e scikit-learn…");
-  await py.loadPackage(["numpy", "pandas", "scikit-learn", "pydantic"]);
+  await py.loadPackage(["numpy", "pandas", "scikit-learn", "pydantic", "ssl"]); // igual a scripts/construir_site.py
   progresso("Carregando o app…");
   py.unpackArchive(zip, "zip", { extractDir: "/backend" });
   py.runPython("import sys; sys.path.insert(0, '/backend')");
