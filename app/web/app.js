@@ -1,5 +1,6 @@
 // Versão web do app UPA Triagem: as mesmas 4 telas do app Android (Triagem, Unidades,
-// Previsões, Info), consumindo o backend FastAPI que serve esta página.
+// Previsões, Info), consumindo o backend FastAPI que serve esta página ou, na versão
+// estática, o mesmo backend rodando no navegador (offline.js).
 "use strict";
 
 /** Sintomas que, mesmo sem conexão com o servidor, indicam procurar emergência. */
@@ -75,6 +76,12 @@ function textoSobre(hex) {
 }
 
 async function api(caminho, opcoes = {}) {
+  // Versão estática (GitHub Pages / APK): o backend roda no próprio navegador (web/offline.js).
+  if (window.backendLocal) {
+    const { status, texto } = await window.backendLocal(opcoes.method || "GET", caminho, opcoes.body);
+    if (status < 200 || status >= 300) throw new Error(`Erro ${status} do servidor: ${texto.slice(0, 200)}`);
+    return JSON.parse(texto);
+  }
   const ctrl = new AbortController();
   // A primeira chamada de previsões treina os modelos e pode levar alguns segundos.
   const tempo = setTimeout(() => ctrl.abort(), 60_000);
@@ -108,7 +115,9 @@ async function carregarTudo() {
     estado.config = await api("/api/config");
     estado.erroConexao = null;
   } catch (e) {
-    estado.erroConexao = `Não foi possível conectar ao servidor (${e.message}). Verifique se o backend está rodando.`;
+    estado.erroConexao = window.backendLocal
+      ? `Não foi possível carregar o app (${e.message}). Verifique a conexão com a internet.`
+      : `Não foi possível conectar ao servidor (${e.message}). Verifique se o backend está rodando.`;
   }
   renderAvisoConexao();
   api("/api/cidadao/exemplos").then((d) => { estado.exemplos = d.cartoes; renderTriagem(); }).catch(() => {});

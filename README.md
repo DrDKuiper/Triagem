@@ -15,6 +15,22 @@ Aplicativo para reduzir filas desnecessárias na UPA e nas UBS (postos de saúde
 └──────────────────────┘               └───────────────────────────┘             └──────────────┘
 ```
 
+## Experimente sem instalar nada
+
+- **Página web**: <https://drdkuiper.github.io/triagem/>
+- **App Android (APK)**: <https://github.com/DrDKuiper/triagem/releases/latest/download/UPA-Triagem.apk>. No celular, permita instalar apps de fontes desconhecidas.
+
+Nas duas versões o backend Python roda **dentro do navegador/celular** com o [Pyodide](https://pyodide.org) (numpy, pandas, scikit-learn e FastAPI compilados para WebAssembly), sem servidor. Os dados são os fictícios do modo simulado e ficam só na memória do aparelho. Na primeira abertura são baixados cerca de 40 MB e é preciso internet; depois o navegador guarda os arquivos em cache.
+
+Como funciona:
+
+- `scripts/construir_site.py` gera o site estático: `app/web/` + `web/offline.js` + o pacote `app/` compactado em `web/backend.zip`.
+- `app/web/offline-worker.js` carrega o Pyodide num Web Worker e atende as chamadas da página por `app/offline.py`, que executa as mesmas funções das rotas de `app/main.py`.
+- O módulo Android `android/web` empacota esse site e o abre num WebView (o módulo `android/app` continua sendo o app nativo que usa o backend no notebook).
+- O workflow `.github/workflows/publicar.yml` roda os testes, testa o site no navegador e compila o APK. No `main`, ele também publica a página no GitHub Pages e o APK na release `app-android`.
+
+**Assinatura do APK**: sem configuração, o APK é assinado com a chave de debug do GitHub Actions, que muda a cada execução. Para instalar uma versão nova, é preciso desinstalar a anterior. Para manter a mesma assinatura, crie uma chave (`keytool -genkeypair -keystore upatriagem.jks -alias upatriagem -keyalg RSA -validity 10000`) e cadastre em *Settings → Secrets and variables → Actions* os secrets `ANDROID_KEYSTORE_BASE64` (o arquivo `.jks` em base64) e `ANDROID_KEYSTORE_SENHA`.
+
 ## Como rodar no notebook
 
 ### 1. Backend (Python 3.10+)
@@ -31,7 +47,7 @@ Na primeira vez ele cria um ambiente virtual e instala as dependências. Depois,
 
 Com o backend rodando, abra <http://localhost:8000>. No computador, o app aparece dentro de uma moldura de celular, com as mesmas 4 telas do Android (Triagem, Unidades, Previsões e Info). Num celular de verdade, ele ocupa a tela toda.
 
-Os arquivos ficam em `app/web/` (HTML, CSS e JavaScript puros, sem build). O mapa usa Leaflet com OpenStreetMap.
+Os arquivos ficam em `app/web/` (HTML, CSS e JavaScript puros, sem build). A versão estática (Pages/APK) é descrita em "Experimente sem instalar nada". O mapa usa Leaflet com OpenStreetMap.
 
 Para testar num celular da mesma rede Wi-Fi, abra `http://IP-DO-NOTEBOOK:8000`. Para publicar online, basta hospedar o backend (ex.: Render, Railway, Fly.io ou um servidor da prefeitura) com o comando `uvicorn app.main:app --host 0.0.0.0 --port $PORT`. A geolocalização do navegador só funciona com HTTPS (ou em `localhost`); sem ela, o app usa o centro do município.
 

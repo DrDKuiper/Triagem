@@ -274,3 +274,12 @@ ul { margin: 0; padding-left: 20px; }
   animation: girar .8s linear infinite;
 }
 @keyframes girar { to { transform: rotate(360deg); } }
+
+/* Versão estática (GitHub Pages / APK): o backend Python carrega dentro do navegador. */
+.carregando-app {
+  position: absolute; inset: 0; z-index: 2000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 24px; text-align: center;
+  background: var(--fundo);
+}
+.carregando-app[hidden] { display: none; }
