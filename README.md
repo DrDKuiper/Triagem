@@ -24,6 +24,7 @@ Nas duas versões o backend Python roda **dentro do navegador/celular** com o [P
 
 - **APK**: o Python, as bibliotecas e o mapa (Leaflet) vêm dentro do app (~40 MB). Funciona sem internet desde a primeira abertura; só os blocos do mapa precisam de conexão.
 - **Página**: na primeira visita são baixados cerca de 40 MB; depois o navegador guarda os arquivos em cache.
+- **Abertura rápida**: as respostas que só dependem dos dados fictícios (configuração, cartões de teste, os 40 cidadãos, dados úteis e previsões) vão pré-calculadas em `web/instantaneo.json`. A tela aparece na hora e o Python carrega em segundo plano (barra no topo); ele só é necessário para calcular a triagem e o status das unidades, que dependem da hora. Quando fica pronto, unidades e previsões são atualizadas.
 
 Como funciona:
 

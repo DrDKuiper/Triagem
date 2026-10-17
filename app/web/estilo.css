@@ -291,3 +291,12 @@ ul { margin: 0; padding-left: 20px; }
   background: var(--fundo);
 }
 .carregando-app[hidden] { display: none; }
+/* Com as respostas pré-calculadas o app já aparece; a barra mostra o Python carregando. */
+.preparando {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 6px 16px 8px;
+  font-size: 12px; color: var(--texto-suave);
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borda);
+}
+.preparando[hidden] { display: none; }

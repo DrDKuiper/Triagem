@@ -35,7 +35,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Gerar o site estático
-        run: python scripts/construir_site.py _site
+        run: |
+          pip install -r requirements.txt  # para pré-calcular web/instantaneo.json
+          python scripts/construir_site.py _site
       - name: Testar no navegador (o backend roda no Pyodide)
         run: |
           pip install playwright
@@ -101,6 +103,8 @@ jobs:
           else
             echo "::warning::Sem o secret ANDROID_KEYSTORE_BASE64: o APK será assinado com a chave de debug."
           fi
+      - name: Dependências do backend (respostas pré-calculadas do site)
+        run: pip install -r requirements.txt
       - name: Compilar o APK
         working-directory: android
         env:

@@ -39,6 +39,10 @@ class CadastroCidadao(ABC):
         """Cartões de teste para demonstração (vazio na integração real)."""
         return []
 
+    def cartoes(self) -> list[str]:
+        """Todos os cartões da base (só na base de teste; vazio na integração real)."""
+        return []
+
 
 # Personagens com perfis pensados para testar a triagem e os alertas ambientais.
 _PERSONAGENS = [
@@ -171,6 +175,9 @@ class CadastroFicticio(CadastroCidadao):
             return None
         # Mantém a idade correta caso o servidor fique no ar após a virada do dia.
         return {**c, "idade": _idade(date.fromisoformat(c["nascimento"]), date.today())}
+
+    def cartoes(self) -> list[str]:
+        return list(self._base)
 
     def exemplos(self) -> list[dict]:
         return [

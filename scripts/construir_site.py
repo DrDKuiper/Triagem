@@ -9,6 +9,10 @@ que são Python puro) e roda no navegador via Pyodide (app/web/offline-worker.js
 Com --app, o Pyodide, as bibliotecas (numpy, pandas, scikit-learn, pydantic) e o Leaflet
 são baixados uma vez para .cache/ e copiados para o site, que então funciona sem internet
 (só os blocos do mapa vêm da internet).
+
+Se as dependências do backend estiverem instaladas (requirements.txt), as respostas que só
+dependem dos dados fictícios vão pré-calculadas em web/instantaneo.json: a página abre na
+hora, enquanto o Python carrega em segundo plano para a triagem e as unidades.
 """
 
 from __future__ import annotations
@@ -96,6 +100,31 @@ def copiar_leaflet(destino: Path) -> None:
                 alvo.write_bytes(tar.extractfile(membro).read())
 
 
+def caminhos_instantaneo() -> list[str]:
+    """Rotas GET respondidas antes do Python carregar. Unidades ficam de fora: o status
+    aberta/fechada e a ocupação dependem da hora em que o app é usado."""
+    from app.cidadao import obter_cadastro
+
+    cartoes = [f"/api/cidadao/{c}" for c in obter_cadastro().cartoes()]
+    return ["/api/config", "/api/cidadao/exemplos", "/api/dados-uteis", "/api/previsoes?semanas=8", *cartoes]
+
+
+def gerar_instantaneo(destino: Path) -> None:
+    sys.path.insert(0, str(RAIZ))
+    try:
+        from app.offline import requisicao
+    except ImportError as e:
+        print(f"aviso: sem web/instantaneo.json ({e}); instale o requirements.txt para a abertura rápida")
+        return
+    respostas = {}
+    for caminho in caminhos_instantaneo():
+        status, texto = requisicao("GET", caminho)
+        if status != 200:
+            raise SystemExit(f"{caminho}: HTTP {status} {texto[:200]}")
+        respostas[caminho] = json.loads(texto)
+    destino.write_text(json.dumps(respostas, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+
+
 def construir(saida: Path, app: bool = False) -> Path:
     if saida.exists():
         shutil.rmtree(saida)
@@ -130,6 +159,7 @@ def construir(saida: Path, app: bool = False) -> Path:
                     if not item.is_dir():
                         z.writestr(item.filename, w.read(item))
 
+    gerar_instantaneo(saida / "web" / "instantaneo.json")
     (saida / ".nojekyll").touch()
     return saida
 
