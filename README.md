@@ -17,7 +17,7 @@ Aplicativo para reduzir filas desnecessárias na UPA e nas UBS (postos de saúde
 
 ## Experimente sem instalar nada
 
-- **Página web**: <https://drdkuiper.github.io/triagem/>
+- **Página web**: <https://drdkuiper.github.io/Triagem/>
 - **App Android (APK)**: <https://github.com/DrDKuiper/triagem/releases/latest/download/UPA-Triagem.apk>. No celular, permita instalar apps de fontes desconhecidas.
 
 Nas duas versões o backend Python roda **dentro do navegador/celular** com o [Pyodide](https://pyodide.org) (numpy, pandas, scikit-learn e FastAPI compilados para WebAssembly), sem servidor. Os dados são os fictícios do modo simulado e ficam só na memória do aparelho. Na primeira abertura são baixados cerca de 40 MB e é preciso internet; depois o navegador guarda os arquivos em cache.
