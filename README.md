@@ -20,14 +20,17 @@ Aplicativo para reduzir filas desnecessárias na UPA e nas UBS (postos de saúde
 - **Página web**: <https://drdkuiper.github.io/Triagem/>
 - **App Android (APK)**: <https://github.com/DrDKuiper/triagem/releases/latest/download/HealthFlow.apk>. No celular, permita instalar apps de fontes desconhecidas.
 
-Nas duas versões o backend Python roda **dentro do navegador/celular** com o [Pyodide](https://pyodide.org) (numpy, pandas, scikit-learn e FastAPI compilados para WebAssembly), sem servidor. Os dados são os fictícios do modo simulado e ficam só na memória do aparelho. Na primeira abertura são baixados cerca de 40 MB e é preciso internet; depois o navegador guarda os arquivos em cache.
+Nas duas versões o backend Python roda **dentro do navegador/celular** com o [Pyodide](https://pyodide.org) (numpy, pandas, scikit-learn e FastAPI compilados para WebAssembly), sem servidor. Os dados são os fictícios do modo simulado e ficam só na memória do aparelho.
+
+- **APK**: o Python, as bibliotecas e o mapa (Leaflet) vêm dentro do app (~40 MB). Funciona sem internet desde a primeira abertura; só os blocos do mapa precisam de conexão.
+- **Página**: na primeira visita são baixados cerca de 40 MB; depois o navegador guarda os arquivos em cache.
 
 Como funciona:
 
-- `scripts/construir_site.py` gera o site estático: `app/web/` + `web/offline.js` + o pacote `app/` compactado em `web/backend.zip`.
+- `scripts/construir_site.py` gera o site estático: `app/web/` + `web/offline.js` + o pacote `app/` e o FastAPI (Python puro) compactados em `web/backend.zip`. Com `--app`, também copia o Pyodide e as bibliotecas (baixados uma vez para `.cache/`) e o Leaflet para dentro do site.
 - `app/web/offline-worker.js` carrega o Pyodide num Web Worker e atende as chamadas da página por `app/offline.py`, que executa as mesmas funções das rotas de `app/main.py`.
 - O módulo Android `android/web` (pacote `com.healthflow.app`) empacota esse site e o abre em tela cheia, sem a moldura de celular e o painel lateral da página (`construir_site.py --app`). O módulo `android/app` continua sendo o app nativo em Kotlin que usa o backend no notebook.
-- O workflow `.github/workflows/publicar.yml` roda os testes, testa o site no navegador e compila o APK. No `main`, ele também publica a página no GitHub Pages e o APK na release `app-android`.
+- O workflow `.github/workflows/publicar.yml` roda os testes, testa o site no navegador (a versão do APK com a internet bloqueada), compila o APK e o testa num emulador Android sem internet (`scripts/testar_apk.sh`). No `main`, ele também publica a página no GitHub Pages e o APK na release `app-android`.
 
 **Assinatura do APK**: sem configuração, o APK é assinado com a chave de debug do GitHub Actions, que muda a cada execução. Para instalar uma versão nova, é preciso desinstalar a anterior. Para manter a mesma assinatura, crie uma chave (`keytool -genkeypair -keystore upatriagem.jks -alias upatriagem -keyalg RSA -validity 10000`) e cadastre em *Settings → Secrets and variables → Actions* os secrets `ANDROID_KEYSTORE_BASE64` (o arquivo `.jks` em base64) e `ANDROID_KEYSTORE_SENHA`.
 
