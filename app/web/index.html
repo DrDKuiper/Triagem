@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0B6E4F">
+  <title>UPA Triagem</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/web/estilo.css">
+</head>
+<body>
+  <!-- No computador o app aparece dentro de uma moldura de celular; num celular de verdade ocupa a tela toda. -->
+  <main class="palco">
+    <aside class="lateral">
+      <h1>UPA Triagem</h1>
+      <p>Versão web do app Android, com o mesmo backend. Abra este endereço no celular para usar em tela cheia.</p>
+      <p class="lateral-dica">API: <a href="/docs">/docs</a></p>
+    </aside>
+
+    <div class="celular">
+      <div class="entalhe" aria-hidden="true"></div>
+      <div class="tela">
+        <header class="barra-status" aria-hidden="true">
+          <span id="relogio">--:--</span>
+          <span class="icones-status">
+            <svg viewBox="0 0 18 12" width="18" height="12"><path d="M1 11h2V8H1zm4 0h2V6H5zm4 0h2V3H9zm4 0h2V1h-2z" fill="currentColor"/></svg>
+            <svg viewBox="0 0 26 12" width="24" height="12"><rect x="0.5" y="0.5" width="22" height="11" rx="3" fill="none" stroke="currentColor"/><rect x="2" y="2" width="16" height="8" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+          </span>
+        </header>
+
+        <div id="aviso-conexao" class="aviso-conexao" hidden></div>
+
+        <div class="conteudo">
+          <section id="aba-triagem" class="aba"></section>
+          <section id="aba-unidades" class="aba" hidden></section>
+          <section id="aba-previsoes" class="aba" hidden></section>
+          <section id="aba-info" class="aba" hidden></section>
+        </div>
+
+        <nav class="navegacao" aria-label="Seções">
+          <button data-aba="triagem" class="ativo">
+            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <span>Triagem</span>
+          </button>
+          <button data-aba="unidades">
+            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>
+            <span>Unidades</span>
+          </button>
+          <button data-aba="previsoes">
+            <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+            <span>Previsões</span>
+          </button>
+          <button data-aba="info">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            <span>Info</span>
+          </button>
+        </nav>
+        <div class="indicador-home" aria-hidden="true"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/web/app.js"></script>
+</body>
+</html>

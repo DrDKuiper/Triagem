@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Permite HTTP sem TLS para o backend local (notebook / rede interna da unidade).
+     Em produção, publique o backend com HTTPS e remova esta liberação. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
