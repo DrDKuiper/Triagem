@@ -24,6 +24,7 @@ def main() -> None:
     ap.add_argument("url")
     ap.add_argument("--screenshot")
     ap.add_argument("--offline", action="store_true", help="bloqueia tudo que não vem do próprio site")
+    ap.add_argument("--exigir-modelo-pronto", action="store_true", help="falha se o modelo de triagem foi treinado ao abrir")
     args = ap.parse_args()
 
     with sync_playwright() as p:
@@ -32,7 +33,14 @@ def main() -> None:
         pagina = contexto.new_page()
         erros: list[str] = []
         pagina.on("pageerror", lambda e: erros.append(str(e)))
-        pagina.on("console", lambda m: print("console:", m.text) if m.type in ("error", "warning") else None)
+        mensagens: list[str] = []
+
+        def console(m):
+            if m.type in ("error", "warning") or m.text.startswith("HealthFlow"):
+                print("console:", m.text)
+            mensagens.append(m.text)
+
+        pagina.on("console", console)
 
         if args.offline:
             externos: list[str] = []
@@ -73,6 +81,8 @@ def main() -> None:
             print(f"Requisições externas bloqueadas: {len(externos)} (ex.: {externos[:2]})")
         if erros:
             raise SystemExit("Erros de JavaScript: " + "; ".join(erros))
+        if args.exigir_modelo_pronto and not any("modelo pré-treinado" in m for m in mensagens):
+            raise SystemExit("O modelo de triagem não veio pré-treinado")
     print("OK")
 
 

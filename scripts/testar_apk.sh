@@ -20,7 +20,7 @@ for _ in $(seq 1 60); do  # até 10 minutos
     break
   fi
   if grep -q "HealthFlow: backend pronto" <<<"$log"; then
-    resultado=0
+    grep -q "modelo pré-treinado" <<<"$log" && resultado=0 || echo "o modelo de triagem não veio pré-treinado"
     break
   fi
 done

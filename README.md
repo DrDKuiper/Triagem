@@ -24,7 +24,8 @@ Nas duas versões o backend Python roda **dentro do navegador/celular** com o [P
 
 - **APK**: o Python, as bibliotecas e o mapa (Leaflet) vêm dentro do app (~40 MB). Funciona sem internet desde a primeira abertura; só os blocos do mapa precisam de conexão.
 - **Página**: na primeira visita são baixados cerca de 40 MB; depois o navegador guarda os arquivos em cache.
-- **Abertura rápida**: as respostas que só dependem dos dados fictícios (configuração, cartões de teste, os 40 cidadãos, dados úteis e previsões) vão pré-calculadas em `web/instantaneo.json`. A tela aparece na hora e o Python carrega em segundo plano (barra no topo); ele só é necessário para calcular a triagem e o status das unidades, que dependem da hora. Quando fica pronto, unidades e previsões são atualizadas.
+- **Abertura rápida**: as respostas que só dependem dos dados fictícios (configuração, cartões de teste, os 40 cidadãos, dados úteis e previsões) vão pré-calculadas em `web/instantaneo.json`. A tela aparece na hora e o Python carrega em segundo plano (barra no topo); ele só é necessário para calcular a triagem e o status das unidades, que dependem da hora. Quando fica pronto, as unidades são atualizadas.
+- **Modelo pré-treinado**: com o Node instalado, `construir_site.py` treina o modelo de triagem uma vez dentro do Pyodide (`scripts/treinar_modelo.mjs`, mesmas versões de Python e scikit-learn do app) e o embute no `backend.zip`. O app só o usa se a versão do scikit-learn bater; senão, treina ao abrir como antes.
 
 Como funciona:
 

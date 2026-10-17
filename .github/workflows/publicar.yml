@@ -34,6 +34,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: .cache
+          key: pyodide-${{ hashFiles('scripts/construir_site.py', 'app/triagem/*.py', 'app/schemas.py', 'app/config.py') }}
+          restore-keys: pyodide-
       - name: Gerar o site estático
         run: |
           pip install -r requirements.txt  # para pré-calcular web/instantaneo.json
@@ -43,12 +48,12 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
           python -m http.server 8080 --directory _site &
-          python scripts/testar_site.py http://localhost:8080/ --screenshot tela.png
+          python scripts/testar_site.py http://localhost:8080/ --screenshot tela.png --exigir-modelo-pronto
       - name: Testar a versão do APK no navegador, sem acesso à internet
         run: |
           python scripts/construir_site.py _app --app
           python -m http.server 8081 --directory _app &
-          python scripts/testar_site.py http://localhost:8081/ --offline --screenshot tela-app.png
+          python scripts/testar_site.py http://localhost:8081/ --offline --screenshot tela-app.png --exigir-modelo-pronto
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -91,7 +96,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .cache
-          key: pyodide-${{ hashFiles('scripts/construir_site.py') }}
+          key: pyodide-${{ hashFiles('scripts/construir_site.py', 'app/triagem/*.py', 'app/schemas.py', 'app/config.py') }}
+          restore-keys: pyodide-
       - uses: gradle/actions/setup-gradle@v4
       - name: Chave de assinatura
         env:
