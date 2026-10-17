@@ -1,25 +1,22 @@
 // Web Worker da versão estática: carrega o Python (Pyodide) com numpy, pandas e
-// scikit-learn, instala o FastAPI e roda o backend do app (app/offline.py).
-// A página (offline.js) envia primeiro o backend.zip e depois as requisições.
+// scikit-learn e roda o backend do app (app/offline.py). A página (offline.js) envia
+// primeiro o backend.zip (app/ + FastAPI) e o endereço do Pyodide, depois as requisições.
 "use strict";
-
-const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/";
-importScripts(PYODIDE + "pyodide.js");
 
 const progresso = (texto) => postMessage({ tipo: "progresso", texto });
 
-let receberZip;
-const zipRecebido = new Promise((r) => { receberZip = r; });
+let receberBackend;
+const backendRecebido = new Promise((r) => { receberBackend = r; });
 
 const pronto = (async () => {
-  progresso("Baixando o Python…");
-  const py = await loadPyodide({ indexURL: PYODIDE });
+  const { zip, pyodide } = await backendRecebido;
+  progresso("Carregando o Python…");
+  importScripts(pyodide + "pyodide.js");
+  const py = await loadPyodide({ indexURL: pyodide });
   progresso("Carregando numpy, pandas e scikit-learn…");
-  await py.loadPackage(["numpy", "pandas", "scikit-learn", "pydantic", "micropip"]);
-  progresso("Instalando o FastAPI…");
-  await py.pyimport("micropip").install(["fastapi==0.115.12"]);
+  await py.loadPackage(["numpy", "pandas", "scikit-learn", "pydantic", "ssl"]); // igual a scripts/construir_site.py
   progresso("Carregando o app…");
-  py.unpackArchive(await zipRecebido, "zip", { extractDir: "/backend" });
+  py.unpackArchive(zip, "zip", { extractDir: "/backend" });
   py.runPython("import sys; sys.path.insert(0, '/backend')");
   progresso("Treinando o modelo de triagem…");
   const offline = py.pyimport("app.offline");
@@ -34,7 +31,7 @@ pronto.then(
 
 onmessage = async (e) => {
   const m = e.data;
-  if (m.tipo === "backend") { receberZip(m.zip); return; }
+  if (m.tipo === "backend") { receberBackend(m); return; }
   try {
     const requisicao = await pronto;
     const resposta = requisicao(m.metodo, m.caminho, m.corpo);

@@ -42,11 +42,18 @@ jobs:
           python -m playwright install --with-deps chromium
           python -m http.server 8080 --directory _site &
           python scripts/testar_site.py http://localhost:8080/ --screenshot tela.png
+      - name: Testar a versão do APK no navegador, sem acesso à internet
+        run: |
+          python scripts/construir_site.py _app --app
+          python -m http.server 8081 --directory _app &
+          python scripts/testar_site.py http://localhost:8081/ --offline --screenshot tela-app.png
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: captura-de-tela
-          path: tela.png
+          path: |
+            tela.png
+            tela-app.png
           if-no-files-found: ignore
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -76,6 +83,13 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: .cache
+          key: pyodide-${{ hashFiles('scripts/construir_site.py') }}
       - uses: gradle/actions/setup-gradle@v4
       - name: Chave de assinatura
         env:
@@ -101,6 +115,25 @@ jobs:
         with:
           name: HealthFlow-apk
           path: HealthFlow.apk
+      - name: Habilitar KVM para o emulador
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Testar o APK num emulador sem internet
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: bash scripts/testar_apk.sh HealthFlow.apk apk.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: captura-do-apk
+          path: apk.png
+          if-no-files-found: ignore
       - name: Publicar na release "app-android"
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
@@ -109,4 +142,4 @@ jobs:
           gh release delete app-android --cleanup-tag --yes || true
           gh release create app-android HealthFlow.apk --target "$GITHUB_SHA" --latest \
             --title "HealthFlow — app Android 1.0.${{ github.run_number }}" \
-            --notes "APK gerado automaticamente a partir de $GITHUB_SHA. Instale no celular Android (permita instalar de fontes desconhecidas). Na primeira abertura, o app baixa o Python e as bibliotecas (~40 MB) e precisa de internet."
+            --notes "APK gerado automaticamente a partir de $GITHUB_SHA. Instale no celular Android (permita instalar de fontes desconhecidas). O Python e as bibliotecas vêm dentro do APK: funciona sem internet (só o mapa precisa de conexão)."

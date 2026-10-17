@@ -2,7 +2,9 @@
 
 Serve tanto para o app com o servidor FastAPI quanto para a versão estática (Pages):
 
-    python scripts/testar_site.py http://localhost:8000 [--screenshot tela.png]
+    python scripts/testar_site.py http://localhost:8000 [--screenshot tela.png] [--offline]
+
+Com --offline, qualquer requisição fora do próprio site é bloqueada (versão do APK).
 """
 
 from __future__ import annotations
@@ -20,15 +22,28 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("url")
     ap.add_argument("--screenshot")
+    ap.add_argument("--offline", action="store_true", help="bloqueia tudo que não vem do próprio site")
     args = ap.parse_args()
 
     with sync_playwright() as p:
         navegador = p.chromium.launch(executable_path=os.getenv("CHROMIUM_PATH") or None)
-        pagina = navegador.new_page(viewport={"width": 412, "height": 900})
+        contexto = navegador.new_context(viewport={"width": 412, "height": 900})
+        pagina = contexto.new_page()
         erros: list[str] = []
         pagina.on("pageerror", lambda e: erros.append(str(e)))
         pagina.on("console", lambda m: print("console:", m.text) if m.type in ("error", "warning") else None)
 
+        if args.offline:
+            externos: list[str] = []
+
+            def so_local(rota):
+                if rota.request.url.startswith(args.url):
+                    rota.continue_()
+                else:
+                    externos.append(rota.request.url)
+                    rota.abort()
+
+            contexto.route("**/*", so_local)  # no contexto: vale também para o Web Worker
         pagina.goto(args.url)
         pagina.locator(".cartao.exemplo").first.wait_for(timeout=TEMPO_MS)
         expect(pagina.locator("#aviso-conexao")).to_be_hidden()
@@ -50,6 +65,8 @@ def main() -> None:
         if args.screenshot:
             pagina.screenshot(path=args.screenshot)
         navegador.close()
+        if args.offline:
+            print(f"Requisições externas bloqueadas: {len(externos)} (ex.: {externos[:2]})")
         if erros:
             raise SystemExit("Erros de JavaScript: " + "; ".join(erros))
     print("OK")

@@ -4,6 +4,10 @@
 "use strict";
 
 (() => {
+  // No APK o Pyodide vem embutido (data-pyodide no <html>); no GitHub Pages, do CDN.
+  // A versão precisa ser a mesma de scripts/construir_site.py.
+  const PYODIDE = new URL(document.documentElement.dataset.pyodide || "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/", location.href).href;
+
   let worker = null; // Promise<Worker>
   let falhou = false;
   let proximoId = 1;
@@ -41,8 +45,8 @@
     w.onmessage = (e) => {
       const m = e.data;
       if (m.tipo === "progresso") mostrarCarregando(m.texto);
-      else if (m.tipo === "pronto") esconderCarregando();
-      else if (m.tipo === "falha") { falhou = true; esconderCarregando(); }
+      else if (m.tipo === "pronto") { console.info("HealthFlow: backend pronto"); esconderCarregando(); }
+      else if (m.tipo === "falha") { console.error("HealthFlow: falha ao carregar o backend: " + m.erro); falhou = true; esconderCarregando(); }
       else if (m.tipo === "resposta") {
         const p = pendentes.get(m.id);
         pendentes.delete(m.id);
@@ -51,7 +55,7 @@
       }
     };
     w.onerror = (e) => falhar(new Error(e.message || "falha ao carregar o app"));
-    w.postMessage({ tipo: "backend", zip }, [zip]);
+    w.postMessage({ tipo: "backend", zip, pyodide: PYODIDE }, [zip]);
     return w;
   }
 
