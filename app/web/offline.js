@@ -58,7 +58,7 @@
       const m = e.data;
       if (m.tipo === "progresso") mostrarProgresso(m.texto);
       else if (m.tipo === "pronto") {
-        console.info("HealthFlow: backend pronto");
+        console.info(`HealthFlow: backend pronto em ${m.segundos.toFixed(1)} s (modelo ${m.modelo})`);
         pronto = true;
         esconderProgresso();
         window.dispatchEvent(new Event("healthflow:backend-pronto"));

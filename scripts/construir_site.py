@@ -13,13 +13,19 @@ são baixados uma vez para .cache/ e copiados para o site, que então funciona s
 Se as dependências do backend estiverem instaladas (requirements.txt), as respostas que só
 dependem dos dados fictícios vão pré-calculadas em web/instantaneo.json: a página abre na
 hora, enquanto o Python carrega em segundo plano para a triagem e as unidades.
+
+Com o Node instalado, o modelo de triagem é treinado uma vez dentro do Pyodide
+(scripts/treinar_modelo.mjs, mesmas versões do app) e vai pronto no backend.zip; sem ele,
+o app treina o modelo ao abrir.
 """
 
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import shutil
+import subprocess
 import sys
 import tarfile
 import urllib.request
@@ -33,6 +39,7 @@ CACHE = RAIZ / ".cache"
 PYODIDE_VERSAO = "0.27.7"  # igual ao de app/web/offline.js
 PYODIDE_CDN = f"https://cdn.jsdelivr.net/pyodide/v{PYODIDE_VERSAO}/full/"
 PYODIDE_NUCLEO = ["pyodide.js", "pyodide.asm.js", "pyodide.asm.wasm", "python_stdlib.zip", "pyodide-lock.json"]
+PYODIDE_NODE = "pyodide.mjs"  # só para treinar o modelo no Node; não vai para o site
 # Pacotes do Pyodide carregados pelo worker (as dependências entram automaticamente).
 PYODIDE_PACOTES = ["numpy", "pandas", "scikit-learn", "pydantic", "ssl"]  # ssl: exigido pelo anyio (FastAPI)
 # Wheels Python puro que não vêm no Pyodide; vão dentro do backend.zip.
@@ -80,14 +87,45 @@ def pacotes_pyodide(lock: dict) -> list[str]:
     return sorted(pacotes[n]["file_name"] for n in vistos)
 
 
-def copiar_pyodide(destino: Path) -> None:
+def arquivos_pyodide() -> tuple[Path, list[str]]:
+    """Baixa (uma vez) o Pyodide e os pacotes usados; devolve a pasta do cache e os arquivos do site."""
     cache = CACHE / f"pyodide-{PYODIDE_VERSAO}"
-    destino.mkdir(parents=True)
-    for arquivo in PYODIDE_NUCLEO:
-        shutil.copy2(baixar(PYODIDE_CDN + arquivo, cache / arquivo), destino / arquivo)
+    for arquivo in [*PYODIDE_NUCLEO, PYODIDE_NODE]:
+        baixar(PYODIDE_CDN + arquivo, cache / arquivo)
     lock = json.loads((cache / "pyodide-lock.json").read_text(encoding="utf-8"))
-    for arquivo in pacotes_pyodide(lock):
-        shutil.copy2(baixar(PYODIDE_CDN + arquivo, cache / arquivo), destino / arquivo)
+    pacotes = pacotes_pyodide(lock)
+    for arquivo in pacotes:
+        baixar(PYODIDE_CDN + arquivo, cache / arquivo)
+    return cache, [*PYODIDE_NUCLEO, *pacotes]
+
+
+def copiar_pyodide(destino: Path) -> None:
+    cache, arquivos = arquivos_pyodide()
+    destino.mkdir(parents=True)
+    for arquivo in arquivos:
+        shutil.copy2(cache / arquivo, destino / arquivo)
+
+
+def modelo_pronto() -> Path | None:
+    """Modelo de triagem treinado no Pyodide (cache pela versão do código que o gera)."""
+    fontes = sorted([*(RAIZ / "app" / "triagem").glob("*.py"), RAIZ / "app" / "schemas.py", RAIZ / "app" / "config.py"])
+    chave = hashlib.sha256(PYODIDE_VERSAO.encode() + b"".join(f.read_bytes() for f in fontes)).hexdigest()[:16]
+    arquivo = CACHE / "modelo" / f"triagem-{chave}.pkl.gz"
+    if arquivo.exists():
+        return arquivo
+    if not shutil.which("node"):
+        print("aviso: sem Node, o modelo de triagem não vai pronto (o app treina ao abrir)")
+        return None
+    try:
+        pasta, _ = arquivos_pyodide()
+        arquivo.parent.mkdir(parents=True, exist_ok=True)
+        temporario = arquivo.with_suffix(".part")
+        subprocess.run(["node", str(RAIZ / "scripts" / "treinar_modelo.mjs"), str(pasta), str(RAIZ), str(temporario)], check=True)
+        temporario.replace(arquivo)
+        return arquivo
+    except (OSError, subprocess.CalledProcessError) as e:
+        print(f"aviso: falha ao treinar o modelo no Pyodide ({e}); o app treina ao abrir")
+        return None
 
 
 def copiar_leaflet(destino: Path) -> None:
@@ -158,6 +196,9 @@ def construir(saida: Path, app: bool = False) -> Path:
                 for item in w.infolist():
                     if not item.is_dir():
                         z.writestr(item.filename, w.read(item))
+        modelo = modelo_pronto()
+        if modelo:  # já comprimido: guarda sem comprimir de novo
+            z.write(modelo, "app/triagem/modelo_triagem.pkl.gz", compress_type=zipfile.ZIP_STORED)
 
     gerar_instantaneo(saida / "web" / "instantaneo.json")
     (saida / ".nojekyll").touch()

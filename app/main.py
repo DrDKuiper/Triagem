@@ -41,6 +41,7 @@ def saude():
         "prontuario": obter_prontuario().nome,
         "llm_ativo": config.usar_llm,
         "acuracia_modelo_triagem": modelo.acuracia,
+        "origem_modelo_triagem": modelo.origem,
     }
 
 

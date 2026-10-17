@@ -14,7 +14,11 @@ profissionais (exportadas do prontuário) para substituir essa base.
 
 from __future__ import annotations
 
+import gzip
+import logging
+import pickle
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -22,6 +26,12 @@ from sklearn.ensemble import RandomForestClassifier
 
 from app.schemas import Prioridade, TriagemEntrada
 from app.triagem.sintomas import COMORBIDADES, SINTOMAS
+
+log = logging.getLogger(__name__)
+
+# Modelo já treinado que scripts/construir_site.py embute na versão estática (GitHub Pages
+# e APK), para o app não treinar ao abrir. Não existe no repositório: no servidor, treina.
+ARQUIVO_PRONTO = Path(__file__).with_name("modelo_triagem.pkl.gz")
 
 AGRAVOS = {
     "sindrome_gripal": "Síndrome gripal (gripe/COVID-19/resfriado)",
@@ -153,6 +163,7 @@ class ModeloTriagem:
         self.clf_gravidade = RandomForestClassifier(n_estimators=200, min_samples_leaf=3, class_weight="balanced", random_state=semente, n_jobs=-1)
         self.clf_agravo = RandomForestClassifier(n_estimators=200, min_samples_leaf=2, random_state=semente, n_jobs=-1)
         self.acuracia: dict[str, float] = {}
+        self.origem = "treinado ao iniciar"
 
     def treinar(self, base: pd.DataFrame) -> "ModeloTriagem":
         """Treina com um DataFrame contendo as colunas de `_COLUNAS` + `gravidade` e `agravo`."""
@@ -187,11 +198,38 @@ class ModeloTriagem:
         return PredicaoML(probabilidades, prioridade, str(self.clf_agravo.classes_[i]), float(probs_a[i]))
 
 
+def salvar_pronto(modelo: ModeloTriagem, arquivo: Path) -> None:
+    import sklearn
+
+    with gzip.open(arquivo, "wb", compresslevel=6) as f:
+        pickle.dump({"semente": modelo.semente, "sklearn": sklearn.__version__, "modelo": modelo}, f, protocol=5)
+
+
+def carregar_pronto(semente: int, arquivo: Path = ARQUIVO_PRONTO) -> ModeloTriagem | None:
+    """Só usa o arquivo se ele foi gerado com a mesma semente e a mesma versão do scikit-learn."""
+    if not arquivo.exists():
+        return None
+    import sklearn
+
+    try:
+        with gzip.open(arquivo, "rb") as f:
+            dados = pickle.load(f)
+        if dados["semente"] != semente or dados["sklearn"] != sklearn.__version__:
+            log.warning("modelo pré-treinado ignorado: semente %s/sklearn %s", dados["semente"], dados["sklearn"])
+            return None
+        modelo = dados["modelo"]
+        modelo.origem = "pré-treinado"
+        return modelo
+    except Exception:
+        log.exception("falha ao carregar o modelo pré-treinado; treinando de novo")
+        return None
+
+
 _modelo: ModeloTriagem | None = None
 
 
 def obter_modelo(semente: int = 42) -> ModeloTriagem:
     global _modelo
     if _modelo is None:
-        _modelo = ModeloTriagem(semente).treinar(gerar_base_sintetica(semente=semente))
+        _modelo = carregar_pronto(semente) or ModeloTriagem(semente).treinar(gerar_base_sintetica(semente=semente))
     return _modelo

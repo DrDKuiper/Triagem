@@ -10,6 +10,7 @@ const backendRecebido = new Promise((r) => { receberBackend = r; });
 
 const pronto = (async () => {
   const { zip, pyodide } = await backendRecebido;
+  const inicio = performance.now();
   progresso("Carregando o Python…");
   importScripts(pyodide + "pyodide.js");
   const py = await loadPyodide({ indexURL: pyodide });
@@ -18,14 +19,17 @@ const pronto = (async () => {
   progresso("Carregando o app…");
   py.unpackArchive(zip, "zip", { extractDir: "/backend" });
   py.runPython("import sys; sys.path.insert(0, '/backend')");
-  progresso("Treinando o modelo de triagem…");
+  progresso("Preparando o modelo de triagem…");
   const offline = py.pyimport("app.offline");
-  py.pyimport("app.main").saude(); // treina o modelo de ML da triagem antes da primeira consulta
-  return offline.requisicao;
+  // Carrega (ou, sem o arquivo pré-treinado, treina) o modelo de ML antes da primeira consulta.
+  const saude = py.pyimport("app.main").saude();
+  const modelo = saude.get("origem_modelo_triagem");
+  saude.destroy();
+  return { requisicao: offline.requisicao, modelo, segundos: (performance.now() - inicio) / 1000 };
 })();
 
 pronto.then(
-  () => postMessage({ tipo: "pronto" }),
+  ({ modelo, segundos }) => postMessage({ tipo: "pronto", modelo, segundos }),
   (e) => postMessage({ tipo: "falha", erro: String(e) }),
 );
 
@@ -33,7 +37,7 @@ onmessage = async (e) => {
   const m = e.data;
   if (m.tipo === "backend") { receberBackend(m); return; }
   try {
-    const requisicao = await pronto;
+    const { requisicao } = await pronto;
     const resposta = requisicao(m.metodo, m.caminho, m.corpo);
     const [status, texto] = resposta.toJs();
     resposta.destroy();

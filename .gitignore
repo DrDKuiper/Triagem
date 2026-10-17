@@ -6,3 +6,4 @@ __pycache__/
 .env
 _site/
 .cache/
+app/triagem/modelo_triagem.pkl.gz
