@@ -22,7 +22,7 @@ from app.unidades import servico as unidades
 from app.unidades.catalogo import POR_ID
 
 app = FastAPI(
-    title="UPA Triagem",
+    title="HealthFlow",
     description="Triagem com IA, situação das filas das unidades de saúde e previsão de agravos.",
     version="1.0.0",
 )

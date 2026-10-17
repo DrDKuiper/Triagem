@@ -3,7 +3,8 @@
 O backend Python vai empacotado em web/backend.zip e roda no navegador via Pyodide
 (app/web/offline-worker.js). Uso:
 
-    python scripts/construir_site.py _site
+    python scripts/construir_site.py _site            # GitHub Pages
+    python scripts/construir_site.py site --app       # APK: tela cheia, sem moldura de celular
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 WEB = RAIZ / "app" / "web"
 
 
-def construir(saida: Path) -> Path:
+def construir(saida: Path, app: bool = False) -> Path:
     if saida.exists():
         shutil.rmtree(saida)
     (saida / "web").mkdir(parents=True)
@@ -30,6 +31,8 @@ def construir(saida: Path) -> Path:
     if tag_app not in html:
         raise SystemExit("index.html: tag do app.js não encontrada")
     html = html.replace(tag_app, '<script src="web/offline.js"></script>\n  ' + tag_app)
+    if app:
+        html = html.replace('<html lang="pt-BR">', '<html lang="pt-BR" class="modo-app">', 1)
     (saida / "index.html").write_text(html, encoding="utf-8")
 
     # O pacote app/ inteiro (main.py monta app/web como estáticos, então ele também vai).
@@ -43,5 +46,6 @@ def construir(saida: Path) -> Path:
 
 
 if __name__ == "__main__":
-    destino = construir(Path(sys.argv[1] if len(sys.argv) > 1 else "_site").resolve())
+    args = [a for a in sys.argv[1:] if a != "--app"]
+    destino = construir(Path(args[0] if args else "_site").resolve(), app="--app" in sys.argv[1:])
     print(f"Site gerado em {destino}")

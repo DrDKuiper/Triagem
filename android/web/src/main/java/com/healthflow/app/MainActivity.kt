@@ -1,27 +1,34 @@
-package com.upatriagem.web
+package com.healthflow.app
 
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.graphics.Color
 import android.os.Bundle
+import android.view.View
 import android.webkit.GeolocationPermissions
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
+import android.widget.LinearLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
 
 /**
- * Abre a versão web do app (assets/site, gerada por scripts/construir_site.py) num WebView.
+ * Abre o app (assets/site, gerado por scripts/construir_site.py --app) em tela cheia num WebView.
  * Os arquivos são servidos em https://appassets.androidplatform.net para que a página tenha
  * origem segura (Web Worker, geolocalização) sem precisar de servidor.
  */
@@ -38,17 +45,33 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val carregador = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
             .build()
 
-        web = WebView(this)
-        setContentView(web)
-        // Mantém o conteúdo fora da barra de status, da navegação e do teclado (edge-to-edge no Android 15).
-        ViewCompat.setOnApplyWindowInsetsListener(web) { v, insets ->
-            val b = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime())
-            v.setPadding(b.left, b.top, b.right, b.bottom)
+        // Barra de status na cor do app; embaixo, a cor da barra de navegação do app (claro/escuro).
+        val noturno = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val corSuperficie = if (noturno) Color.parseColor("#1C2220") else Color.WHITE
+        val barraStatus = View(this).apply { setBackgroundColor(Color.parseColor(COR_PRIMARIA)) }
+        web = WebView(this).apply { setBackgroundColor(corSuperficie) }
+        val raiz = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(corSuperficie)
+            addView(barraStatus, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0))
+            addView(web, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        }
+        setContentView(raiz)
+        WindowCompat.getInsetsController(window, raiz).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = !noturno
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(raiz) { v, insets ->
+            val barras = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val teclado = insets.getInsets(WindowInsetsCompat.Type.ime())
+            barraStatus.updateLayoutParams { height = barras.top }
+            v.setPadding(barras.left, 0, barras.right, maxOf(barras.bottom, teclado.bottom))
             WindowInsetsCompat.CONSUMED
         }
 
@@ -103,5 +126,6 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         const val HOST = WebViewAssetLoader.DEFAULT_DOMAIN
+        const val COR_PRIMARIA = "#0B6E4F"
     }
 }
